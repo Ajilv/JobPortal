@@ -26,5 +26,9 @@ urlpatterns=[
     path('saved-jobs/', views.SavedJobView.as_view(), name='saved-job-list'),
     path('saved-jobs/<int:jid>/', views.SavedJobView.as_view(), name='save-job'),
 
+    path('jobseeker/applications/', views.MyApplicationsView.as_view(), name='my-applications'),
+    path('employer/applications/', views.EmployerApplicationUpdateView.as_view(), name='employer-applications'),
+    path('employer/applications/<int:pk>/', views.EmployerApplicationUpdateView.as_view(), name='update-application-status'),
 
 ]
+

@@ -63,11 +63,19 @@ class JobModel(models.Model):
 
 
 class Application(models.Model):
+    STATUS_CHOICES = [
+        ('applied', 'Applied'),
+        ('viewed', 'Viewed'),
+        ('shortlisted', 'Shortlisted'),
+        ('rejected', 'Rejected'),
+    ]
     job = models.ForeignKey('JobModel', on_delete=models.CASCADE, related_name='applications')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     cover_letter = models.TextField(blank=True)
     resume = models.FileField(upload_to='applications/', null=True, blank=True)
     applied_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='applied')
+
 
     class Meta:
         unique_together = ('job', 'user')

@@ -6,6 +6,7 @@ from .serializers import SignupSerializer,JobseekerSerializer,EmployerSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from JobsApp.models import Jobseeker,Employer,JobModel,Application,SavedJob
+from JobsApp.permissions import IsEmployer,IsSeeker
 
 class SignupView(APIView):
     def post(self, request):
@@ -173,7 +174,7 @@ class JobDetailView(APIView):
 
 
 class ApplyJobView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsSeeker]
 
     def post(self, request, job_id):
         user = request.user
@@ -234,3 +235,37 @@ class SavedJobView(APIView):
 
         saved.delete()
         return Response({'message': 'Job unsaved successfully'}, status=200)
+
+
+
+class MyApplicationsView(APIView):
+    permission_classes = [IsAuthenticated,IsSeeker]
+
+    def get(self, request):
+        applications = Application.objects.filter(user=request.user)
+        serializer = ApplicationSerializer(applications, many=True)
+        return Response(serializer.data)
+
+
+class EmployerApplicationUpdateView(APIView):
+    permission_classes = [IsAuthenticated,IsEmployer]
+
+    def get(self, request):
+        applications = Application.objects.filter(job__employer__user=request.user)
+        serializer = ApplicationSerializer(applications, many=True)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        # Update application status
+        try:
+            application = Application.objects.get(id=pk, job__employer__user=request.user)
+        except Application.DoesNotExist:
+            return Response({'error': 'Application not found'}, status=404)
+
+        status_val = request.data.get('status')
+        if status_val not in ['applied', 'viewed', 'shortlisted', 'rejected']:
+            return Response({'error': 'Invalid status'}, status=400)
+
+        application.status = status_val
+        application.save()
+        return Response({'message': f'Status updated to {status_val}'})
