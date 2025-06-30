@@ -31,7 +31,7 @@ urlpatterns=[
     path('employer/applications/<int:pk>/', views.EmployerApplicationUpdateView.as_view(), name='update-application-status'),
     path('company/<int:company_id>/reviews/', views.CompanyReviewView.as_view(), name='company-reviews'),
     path('company/reviews/', views.CompanyReviewView.as_view(), name='company-reviews'),
-
+    path('company/myreviews/',views.CompanyReviewEmployer.as_view(),name="Companys-Review"),
     path('employer/company/', views.CompanyProfileView.as_view(), name='company-profile'),
 
 ]

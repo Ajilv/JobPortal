@@ -321,6 +321,21 @@ class CompanyProfileView(APIView):
         return Response(serializer.errors, status=400)
 
 
+class CompanyReviewEmployer(APIView):
+    permission_classes = [IsAuthenticated, IsEmployer]
+
+    def get(self, request):
+        try:
+            company = Company.objects.get(employer__user=request.user)
+        except Company.DoesNotExist:
+            return Response({'error': 'Company profile not found'}, status=404)
+
+        reviews = CompanyReview.objects.filter(company=company)
+        serializer = CompanyReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
+
+
+
 class CompanyReviewView(APIView):
     permission_classes = [IsAuthenticated, IsSeeker]
 

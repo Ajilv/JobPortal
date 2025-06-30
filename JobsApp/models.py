@@ -101,7 +101,6 @@ class Company(models.Model):
     description = models.TextField()
     location = models.CharField(max_length=255)
     website = models.URLField(blank=True, null=True)
-
     def __str__(self):
         return self.name
 
@@ -115,6 +114,5 @@ class CompanyReview(models.Model):
 
     class Meta:
         unique_together = ['company', 'reviewer']
-
     def __str__(self):
         return f"{self.reviewer.username} - {self.company.name} ({self.rating})"
