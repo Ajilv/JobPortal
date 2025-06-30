@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User,Jobseeker,Employer,JobModel,Application,SavedJob
+from .models import User,Jobseeker,Employer,JobModel,Application,SavedJob,Company,CompanyReview
 from django.contrib.auth.password_validation import validate_password
 
 
@@ -61,3 +61,15 @@ class SavedJobSerializer(serializers.ModelSerializer):
         model = SavedJob
         fields = '__all__'
         read_only_fields = ['user', 'saved_at']
+
+class CompanyReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyReview
+        fields = '__all__'
+        read_only_fields = ['reviewer','company']
+
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = '__all__'
+        read_only_fields = ['employer']

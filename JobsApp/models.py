@@ -55,7 +55,7 @@ class JobModel(models.Model):
     desciption=models.TextField(max_length=200,null=True)
     job_type=models.CharField(max_length=30,choices=Job_Types)
     location=models.CharField(max_length=100,null=True,blank=True)
-    salary=models.CharField(max_length=40,null=True,blank=True)
+    salary=models.IntegerField(null=True,blank=True)
     isActive=models.BooleanField(default=True)
 
     def __str__(self):
@@ -93,3 +93,28 @@ class SavedJob(models.Model):
 
     def __str__(self):
         return f"{self.user} saved {self.job}"
+
+
+class Company(models.Model):
+    employer = models.OneToOneField(Employer, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    location = models.CharField(max_length=255)
+    website = models.URLField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+class CompanyReview(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='reviews')
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE)
+    rating = models.IntegerField()
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['company', 'reviewer']
+
+    def __str__(self):
+        return f"{self.reviewer.username} - {self.company.name} ({self.rating})"

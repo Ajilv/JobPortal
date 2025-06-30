@@ -29,6 +29,10 @@ urlpatterns=[
     path('jobseeker/applications/', views.MyApplicationsView.as_view(), name='my-applications'),
     path('employer/applications/', views.EmployerApplicationUpdateView.as_view(), name='employer-applications'),
     path('employer/applications/<int:pk>/', views.EmployerApplicationUpdateView.as_view(), name='update-application-status'),
+    path('company/<int:company_id>/reviews/', views.CompanyReviewView.as_view(), name='company-reviews'),
+    path('company/reviews/', views.CompanyReviewView.as_view(), name='company-reviews'),
+
+    path('employer/company/', views.CompanyProfileView.as_view(), name='company-profile'),
 
 ]
 
