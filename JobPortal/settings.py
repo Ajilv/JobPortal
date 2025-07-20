@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,10 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'JobsApp',
+    'JobsApp.apps.JobsappConfig',
     'rest_framework',
     'rest_framework_simplejwt',
     'django_filters',
+    'Groups'
 ]
 
 MIDDLEWARE = [
@@ -82,6 +84,11 @@ REST_FRAMEWORK = {
 WSGI_APPLICATION = 'JobPortal.wsgi.application'
 
 
+SIMPLE_JWT={
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+}
+
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -112,6 +119,17 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 AUTH_USER_MODEL = 'JobsApp.User'
 
+
+# EMail config code
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = 'zescertrial@gmail.com'
+EMAIL_HOST_PASSWORD = 'voty olbe dvmu hnje'
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/

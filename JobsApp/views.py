@@ -1,16 +1,19 @@
+from django.contrib.auth import get_user_model
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import SignupSerializer,JobseekerSerializer,EmployerSerializer,JobModelSerializer,ApplicationSerializer,SavedJobSerializer,CompanySerializer,CompanyReviewSerializer
-from rest_framework.permissions import IsAuthenticated
+from .serializers import SignupSerializer,JobseekerSerializer,EmployerSerializer,JobModelSerializer,ApplicationSerializer,SavedJobSerializer,CompanySerializer,CompanyReviewSerializer,ResetPasswordSerializer,ForgotPasswordSerializer,UserSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
-from JobsApp.models import Jobseeker,Employer,JobModel,Application,SavedJob,Company,CompanyReview
+from JobsApp.models import Jobseeker,Employer,JobModel,Application,SavedJob,Company,CompanyReview,PasswordResetOTP,Follower
 from JobsApp.permissions import IsEmployer,IsSeeker
 from rest_framework import generics,filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import JobFilter
+from JobsApp.utility import generate_otp
 
+User = get_user_model()
 
 class SignupView(APIView):
     def post(self, request):
@@ -210,7 +213,7 @@ class ApplyJobView(APIView):
 
         serializer = ApplicationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=user, job=job, resume=seeker_profile.resume)
+            serializer.save(user=user, job=job, resume=seeker_profile.resume,profile_pic=seeker_profile.profile_pic)
             return Response({'message': 'Application submitted successfully.'}, status=201)
 
         return Response(serializer.errors, status=400)
@@ -362,3 +365,139 @@ class CompanyReviewView(APIView):
         serializer = CompanyReviewSerializer(reviews, many=True)
         return Response(serializer.data)
 
+
+class CompanyListView(generics.ListAPIView):
+    queryset = Company.objects.all()
+    serializer_class = CompanySerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
+
+class CompanyReviewBySearch(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        name = request.GET.get('name')
+        company_id = request.GET.get('id')
+
+        # Check if name or ID is provided
+        if name:
+            companies = Company.objects.filter(name__icontains=name)
+        elif company_id:
+            companies = Company.objects.filter(id=company_id)
+        else:
+            return Response({'error': 'Please provide either company name or ID'}, status=400)
+
+        if not companies.exists():
+            return Response({'error': 'Company not found'}, status=404)
+
+        reviews = CompanyReview.objects.filter(company__in=companies)
+        serializer = CompanyReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
+
+
+User = get_user_model()
+
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = User.objects.get(email=email)
+            otp = generate_otp()
+
+            PasswordResetOTP.objects.create(user=user, otp=otp)
+
+            print(f"OTP for {email}: {otp}")
+
+            return Response({'message': 'OTP sent successfully'})
+        return Response(serializer.errors, status=400)
+
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            otp = serializer.validated_data['otp']
+            new_password = serializer.validated_data['new_password']
+
+            try:
+                user = User.objects.get(email=email)
+                otp_record = PasswordResetOTP.objects.filter(user=user, otp=otp, is_used=False).latest('created_at')
+
+                from datetime import timedelta
+                from django.utils import timezone
+                if timezone.now() - otp_record.created_at > timedelta(minutes=10):
+                    return Response({'error': 'OTP expired'}, status=400)
+
+                user.set_password(new_password)
+                user.save()
+
+                otp_record.is_used = True
+                otp_record.save()
+
+                return Response({'message': 'Password reset successful'})
+            except (User.DoesNotExist, PasswordResetOTP.DoesNotExist):
+                return Response({'error': 'Invalid OTP or email'}, status=400)
+        return Response(serializer.errors, status=400)
+
+
+class FollowUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        try:
+            to_follow = User.objects.get(id=user_id)
+            if request.user == to_follow:
+                return Response({"error": "You can't follow yourself"}, status=400)
+
+            follow_obj,created = Follower.objects.get_or_create(follower=request.user, following=to_follow)
+            if not created:
+                return Response({"message":"The User is alredy followed "})
+
+            return Response({"message": "Followed successfully"})
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+class UnfollowUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        try:
+            to_unfollow = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        if request.user==to_unfollow:
+            return Response({"error":"you cant  unfollow yourself"},status=400)
+
+        follow_ornot=Follower.objects.filter(follower=request.user,following=to_unfollow).first()
+
+        if not follow_ornot:
+            return Response({"message":"You need to follow before unfollowing "},status=400)
+        follow_ornot.delete()
+        return Response({"message":f"You Have successfully Unfollowed the user {to_unfollow.username}"},status=200)
+
+class FollowersListView(APIView):
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            followers = Follower.objects.filter(following=user).values_list('follower', flat=True)
+            users = User.objects.filter(id__in=followers)
+            serializer = UserSerializer(users, many=True)
+            return Response(serializer.data)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+class FollowingListView(APIView):
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            following = Follower.objects.filter(follower=user).values_list('following', flat=True)
+            users = User.objects.filter(id__in=following)
+            serializer = UserSerializer(users, many=True)
+            return Response(serializer.data)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
