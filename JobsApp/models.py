@@ -1,7 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser,AbstractBaseUser
 from JobPortal import settings
+from django.contrib.auth import get_user_model
+from django.conf import settings
 # Create your models here.
+
+
 
 class User(AbstractUser):
 
@@ -21,8 +25,22 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
+
+User = get_user_model()
+
+class PasswordResetOTP(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.otp}"
+
+
 class Jobseeker(models.Model):
     name= models.OneToOneField(User,on_delete=models.CASCADE)
+    profile_pic = models.ImageField(upload_to="profile_pics/", null=True, blank=True)
     resume=models.FileField(upload_to="resumes/",null=True)
     exp=models.CharField(max_length=60,null=True,blank=True)
     skills=models.CharField(max_length=100,null=True,blank=True)
@@ -41,8 +59,6 @@ class Employer(models.Model):
 
     def __str__(self):
         return f"Employer: {self.user.email}"
-
-
 class JobModel(models.Model):
     Job_Types=(
         ('Full-Time','Full-Time'),
@@ -56,6 +72,9 @@ class JobModel(models.Model):
     job_type=models.CharField(max_length=30,choices=Job_Types)
     location=models.CharField(max_length=100,null=True,blank=True)
     salary=models.IntegerField(null=True,blank=True)
+    email = models.EmailField(null=True, blank=True)
+    phone = models.CharField(max_length=20, null=True, blank=True)
+    visible = models.BooleanField(default=True)
     isActive=models.BooleanField(default=True)
 
     def __str__(self):
@@ -69,13 +88,19 @@ class Application(models.Model):
         ('shortlisted', 'Shortlisted'),
         ('rejected', 'Rejected'),
     ]
+
     job = models.ForeignKey('JobModel', on_delete=models.CASCADE, related_name='applications')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    cover_letter = models.TextField(blank=True)
     resume = models.FileField(upload_to='applications/', null=True, blank=True)
+    profile_pic = models.ImageField(upload_to='applications/profile_pics/', null=True, blank=True)
+    cover_letter = models.TextField(blank=True)
+    skills = models.CharField(max_length=100, blank=True, null=True)
+    exp = models.CharField(max_length=60, blank=True, null=True)
+    qualification = models.TextField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    contact_no = models.CharField(max_length=20, blank=True, null=True)
     applied_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='applied')
-
 
     class Meta:
         unique_together = ('job', 'user')
@@ -116,3 +141,23 @@ class CompanyReview(models.Model):
         unique_together = ['company', 'reviewer']
     def __str__(self):
         return f"{self.reviewer.username} - {self.company.name} ({self.rating})"
+
+
+class Follower(models.Model):
+    follower = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='following_set',
+        on_delete=models.CASCADE
+    )
+    following = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='followers_set',
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('follower', 'following')
+
+    def __str__(self):
+        return f"{self.follower} follows {self.following}"

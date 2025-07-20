@@ -33,6 +33,16 @@ urlpatterns=[
     path('company/reviews/', views.CompanyReviewView.as_view(), name='company-reviews'),
     path('company/myreviews/',views.CompanyReviewEmployer.as_view(),name="Companys-Review"),
     path('employer/company/', views.CompanyProfileView.as_view(), name='company-profile'),
+    path('companies/', views.CompanyListView.as_view(), name='company-list'),
+    path('company/reviews/search/', views.CompanyReviewBySearch.as_view(), name='company-review-search'),
+    path('auth/forgot-password/', views.ForgotPasswordView.as_view(), name='forgot-password'),
+    path('auth/reset-password/', views.ResetPasswordView.as_view(), name='reset-password'),
+
+    #Followers
+    path('follow/<int:user_id>/', views.FollowUserView.as_view(), name='follow-user'),
+    path('unfollow/<int:user_id>/', views.UnfollowUserView.as_view(), name='unfollow-user'),
+    path('followers/<int:user_id>/', views.FollowersListView.as_view(), name='followers-list'),
+    path('following/<int:user_id>/', views.FollowingListView.as_view(), name='following-list'),
 
 ]
 

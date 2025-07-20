@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import User,Jobseeker,Employer,JobModel,Application,SavedJob,Company,CompanyReview
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import get_user_model
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -32,6 +33,26 @@ class SignupSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+User = get_user_model()
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email']
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("No user with this email.")
+        return value
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(write_only=True, validators=[validate_password])
+
+
 class JobseekerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Jobseeker
@@ -54,7 +75,8 @@ class ApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
         fields = '__all__'
-        read_only_fields = ['id', 'job', 'resume', 'applied_at','user']
+        read_only_fields = ['id', 'user', 'job', 'resume', 'profile_pic', 'applied_at']
+
 
 class SavedJobSerializer(serializers.ModelSerializer):
     class Meta:

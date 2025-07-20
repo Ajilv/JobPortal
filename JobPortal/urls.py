@@ -22,6 +22,7 @@ from JobPortal import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('JobApp/',include(urls)),
+    path('Groups/',include('Groups.urls')),
 ]
 
 urlpatterns+= staticfiles_urlpatterns()
